@@ -105,23 +105,6 @@ cluster_reactome_pathways <- function(
   message("Inputs OK...\n")
 
 
-  # Define helper functions -----------------------------------------------
-
-  get_jac_mat <- function(list) {
-    list %>%
-      map(~data.frame(id = .x)) %>%
-      bind_rows(.id = "name") %>%
-      mutate(present = 1) %>%
-      pivot_wider(
-        id_cols     = "id",
-        names_from  = "name",
-        values_from = "present"
-      ) %>%
-      replace(is.na(.), 0) %>%
-      column_to_rownames(var = "id")
-  }
-
-
   # Clean inputs ----------------------------------------------------------
 
   message("Cleaning inputs...")
