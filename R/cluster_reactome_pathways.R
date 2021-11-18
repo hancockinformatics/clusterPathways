@@ -24,24 +24,16 @@
 #' @import glue
 #' @import RColorBrewer
 #'
-#' @description The following columns must be present in "input_df": "ID",
-#'   "Description", "GeneRatio", "BgRatio", "pvalue", "p.adjust", "qvalue",
-#'   "geneID", "Count".
+#' @description Using the data frame of results output from
+#'   [ReactomePA](https://www.bioconductor.org/packages/ReactomePA/), create a
+#'   pairwise Jaccard matrix and cluster pathways accordingly.
+#'   Heatmaps/denrograms are saved, and two results tables are returned as
+#'   output.
 #'
-#'   You will likely need to play with different values of width/height to
-#'   get images that are the proper size. In some cases it may be easier to
-#'   modify the png() calls directly, and ignore the arguments here.
-#'
-#'   Link to the script to create the Reactome levels table:
-#'   <https://github.com/hancockinformatics/misc_R_scripts/blob/master/R_scripts/get_reactome_L1_L2.R>
-#'
-#' @return A named list containing two data frames, "all_pathways" and
-#'   "rep_pathways" (see Details for more information). The function also saves
-#'   heatmaps to ".png" files in the provided output directory.
-#'
-#' @details {
-#' The "all_pathways" table contains all pathways input to the function,
-#' with some additional columns:
+#' @return {
+#'  A named list containing two data frames, "all_pathways" and "rep_pathways"
+#'  (see Details for more information). The function also saves heatmaps to
+#'  ".png" files in the provided output directory.
 #'
 #' \describe{
 #'   \item{cluster}{Denotes the groups the pathways are placed within}
@@ -56,7 +48,19 @@
 #' The "rep_pathways" table contains all of the above, plus the column
 #' "n_pathways" which is the number of pathways from that cluster (the number in
 #' square brackets in the "heatmap_rep_pathways_clustered.png" output image).
+#'
 #' }
+#'
+#' @details The following columns must be present in "input_df": "ID",
+#'   "Description", "GeneRatio", "BgRatio", "pvalue", "p.adjust", "qvalue",
+#'   "geneID", "Count".
+#'
+#'   You will likely need to play with different values of width/height to get
+#'   images that are the proper size. In some cases it may be easier to modify
+#'   the png() calls directly, and ignore the arguments here.
+#'
+#'   Link to the script to create the Reactome levels table:
+#'   <https://github.com/hancockinformatics/misc_R_scripts/blob/master/R_scripts/get_reactome_L1_L2.R>
 #'
 #' @references None.
 #'
