@@ -1,0 +1,23 @@
+Package: clusterReactome
+Title: Cluster Reactome Pathways Using Genes and Jaccard Index
+Version: 0.0.1
+Authors@R: 
+    person("Travis", "Blimkie", , "travis@hancocklab.com", role = c("aut", "cre"))
+Description: Produces tabels and heatmaps/dendrograms of Reactome pathways,
+    clustered using their constituent genes and calculation of a pairwise 
+    Jaccard matrix.
+License: GPL (>= 3) + file LICENSE
+Encoding: UTF-8
+Imports:
+    pheatmap,
+    tibble,
+    dplyr,
+    stringr,
+    purrr,
+    vegan,
+    janitor,
+    glue,
+    RColorBrewer,
+    magrittr
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
