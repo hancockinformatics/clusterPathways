@@ -1,3 +1,4 @@
-^clusterReactome\.Rproj$
+^clusterPathways\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
+^data-raw$
