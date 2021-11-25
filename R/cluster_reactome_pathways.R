@@ -63,6 +63,13 @@ cluster_reactome_pathways <- function(input_pathways,
                                       output_dir,
                                       width,
                                       height) {
+
+
+  if (!dir.exists(output_dir)) {
+    dir.create(output_dir)
+  }
+
+
   ### Tidy and prep input
   message("Tidying input...")
   pathways_tidy_init <- input_pathways %>%
@@ -155,7 +162,8 @@ cluster_reactome_pathways <- function(input_pathways,
     annotation_names_row = FALSE,
     fontsize             = 14,
     cutree_rows          = n_level2,
-    treeheight_col       = 0
+    treeheight_col       = 0,
+    silent               = TRUE
   )
 
   png(
@@ -305,14 +313,7 @@ cluster_reactome_pathways <- function(input_pathways,
     unique() %>%
     length()
 
-  png(
-    glue("{output_dir}/level1_heatmap_miscellaneous.png"),
-    width  = 16,
-    height = 12,
-    units  = "in",
-    res    = 150
-  )
-  pheatmap(
+  heatmap_leftover <- pheatmap(
     mat                  = leftover_sig_jac_mat,
     show_colnames        = FALSE,
     color                = heatmaps_colours,
@@ -322,8 +323,17 @@ cluster_reactome_pathways <- function(input_pathways,
     fontsize             = 14,
     treeheight_col       = 0,
     cutree_rows          = leftover_n_clust,
-    main                 = "Miscellaneous pathways"
+    main                 = "Miscellaneous pathways",
+    silent               = TRUE
   )
+  png(
+    glue("{output_dir}/level1_heatmap_miscellaneous.png"),
+    width  = 16,
+    height = 12,
+    units  = "in",
+    res    = 150
+  )
+  print(heatmap_leftover)
   dev.off()
   message("Done.\n")
 
