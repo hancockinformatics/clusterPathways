@@ -7,6 +7,7 @@
 #'   Details for more information).
 #' @param input_genes Genes used to generate the `input_pathways` table, e.g. a
 #'   list of DE genes. Must be Ensembl IDs.
+#' @param species Either "human" (the default) or "mouse".
 #' @param output_dir Directory to save heatmaps into. It will be created if it
 #'   doesn't already exist.
 #' @param width Width of output heatmaps.
@@ -60,6 +61,7 @@
 #'
 cluster_reactome_pathways <- function(input_pathways,
                                       input_genes,
+                                      species = "human",
                                       output_dir,
                                       width,
                                       height) {
@@ -72,26 +74,53 @@ cluster_reactome_pathways <- function(input_pathways,
 
   ### Tidy and prep input
   message("Tidying input...")
-  pathways_tidy_init <- input_pathways %>%
-    remove_rownames() %>%
-    rename("id" = 1, "description" = 2) %>%
-    filter(!description %in% reactome_categories_HSA_L1_L2$level_1) %>%
-    left_join(reactome_categories_HSA_L1_L2, by = c("id", "description"))
+
+  if (species == "human") {
+    pathways_tidy_init <- input_pathways %>%
+      remove_rownames() %>%
+      rename("id" = 1, "description" = 2) %>%
+      filter(!description %in% reactome_categories_HSA_L1_L2$level_1) %>%
+      left_join(reactome_categories_HSA_L1_L2, by = c("id", "description"))
 
 
-  ### Get the background and candidate genes for each pathway
-  pathways_bg_genes <- reactome_genes_HSA %>%
-    select(id, bg_genes) %>%
-    separate_rows(bg_genes, sep = "; ") %>%
-    filter(id %in% pathways_tidy_init$id) %>%
-    split(x = .$bg_genes, f = .$id)
+    ### Get the background and candidate genes for each pathway
+    pathways_bg_genes <- reactome_genes_HSA %>%
+      select(id, bg_genes) %>%
+      separate_rows(bg_genes, sep = "; ") %>%
+      filter(id %in% pathways_tidy_init$id) %>%
+      split(x = .$bg_genes, f = .$id)
 
-  pathways_cd_genes <- reactome_genes_HSA %>%
-    select(id, bg_genes) %>%
-    separate_rows(bg_genes, sep = "; ") %>%
-    filter(id %in% pathways_tidy_init$id,
-           bg_genes %in% input_genes) %>%
-    split(x = .$bg_genes, f = .$id)
+    pathways_cd_genes <- reactome_genes_HSA %>%
+      select(id, bg_genes) %>%
+      separate_rows(bg_genes, sep = "; ") %>%
+      filter(id %in% pathways_tidy_init$id,
+             bg_genes %in% input_genes) %>%
+      split(x = .$bg_genes, f = .$id)
+
+  } else if (species == "mouse") {
+    pathways_tidy_init <- input_pathways %>%
+      remove_rownames() %>%
+      rename("id" = 1, "description" = 2) %>%
+      filter(!description %in% reactome_categories_MMU_L1_L2$level_1) %>%
+      left_join(reactome_categories_MMU_L1_L2, by = c("id", "description"))
+
+
+    ### Get the background and candidate genes for each pathway
+    pathways_bg_genes <- reactome_genes_MMU %>%
+      select(id, bg_genes) %>%
+      separate_rows(bg_genes, sep = "; ") %>%
+      filter(id %in% pathways_tidy_init$id) %>%
+      split(x = .$bg_genes, f = .$id)
+
+    pathways_cd_genes <- reactome_genes_MMU %>%
+      select(id, bg_genes) %>%
+      separate_rows(bg_genes, sep = "; ") %>%
+      filter(id %in% pathways_tidy_init$id,
+             bg_genes %in% input_genes) %>%
+      split(x = .$bg_genes, f = .$id)
+  } else {
+    stop("Argument 'species' must be one of 'human' (default) or 'mouse'.")
+  }
 
 
   ### Find number of level 2 terms represented in input pathways
