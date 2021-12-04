@@ -28,14 +28,14 @@ options(
 
 ## All pathways
 ```{r table_1}
-DT::datatable(params$table_1)
+DT::datatable(params$table_1, rownames = FALSE)
 ```
 
 <br>
 
 ## Representative pathways
 ```{r table_2}
-DT::datatable(params$table_2)
+DT::datatable(params$table_2, rownames = FALSE)
 ```
 
 <br>
