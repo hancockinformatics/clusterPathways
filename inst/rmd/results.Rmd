@@ -1,0 +1,41 @@
+---
+title: "clusterPathways results"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+
+output: 
+  html_document:
+    theme: flatly
+params:
+  table_1: ""
+  table_2: ""
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  echo    = FALSE, 
+  message = FALSE, 
+  warning = FALSE, 
+  comment = ""
+)
+
+options(
+  DT.options = list(
+    dom = "ftip"
+  )
+)
+
+```
+
+## All pathways
+```{r table_1}
+DT::datatable(params$table_1)
+```
+
+<br>
+
+## Representative pathways
+```{r table_2}
+DT::datatable(params$table_2)
+```
+
+<br>

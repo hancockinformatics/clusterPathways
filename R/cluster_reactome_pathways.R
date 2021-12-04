@@ -395,6 +395,12 @@ cluster_reactome_pathways <- function(input_pathways,
   out_table_3 <- input_pathways_tidy %>%
     filter(!id %in% out_table_1$id)
 
+  rmarkdown::render(
+    input = system.file("rmd", "results.Rmd", package = "clusterPathways"),
+    params = list(table_1 = out_table_1, table_2 = out_table_2),
+    output_dir = output_dir
+  )
+
   message("Done.\n")
   return(list(
     all_pathways = out_table_1,
