@@ -147,7 +147,7 @@ cluster_reactome_pathways <- function(input_pathways,
     mutate(
       n_bg_genes = map_dbl(id, ~ length(pathways_bg_genes[[.x]])),
       n_cd_genes = map_dbl(id, ~ length(pathways_cd_genes[[.x]])),
-      gene_ratio = n_cd_genes / n_bg_genes
+      gene_ratio = round((n_cd_genes / n_bg_genes) * 100, digits = 1)
     )
   message("Done.\n")
 
