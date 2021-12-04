@@ -79,7 +79,10 @@ cluster_reactome_pathways <- function(input_pathways,
     pathways_tidy_init <- input_pathways %>%
       remove_rownames() %>%
       rename("id" = 1, "description" = 2) %>%
-      filter(!description %in% reactome_categories_HSA_L1_L2$level_1) %>%
+      filter(
+        id %in% reactome_categories_MMU_L1_L2$id,
+        !description %in% reactome_categories_HSA_L1_L2$level_1
+      ) %>%
       left_join(reactome_categories_HSA_L1_L2, by = c("id", "description"))
 
 
@@ -101,7 +104,10 @@ cluster_reactome_pathways <- function(input_pathways,
     pathways_tidy_init <- input_pathways %>%
       remove_rownames() %>%
       rename("id" = 1, "description" = 2) %>%
-      filter(!description %in% reactome_categories_MMU_L1_L2$level_1) %>%
+      filter(
+        id %in% reactome_categories_MMU_L1_L2$id,
+        !description %in% reactome_categories_MMU_L1_L2$level_1
+      ) %>%
       left_join(reactome_categories_MMU_L1_L2, by = c("id", "description"))
 
 
@@ -255,6 +261,8 @@ cluster_reactome_pathways <- function(input_pathways,
       select(description_n, direction) %>%
       filter(!is.na(description_n)) %>%
       column_to_rownames("description_n")
+  } else {
+    ann_colour_table_n <- NULL
   }
 
 
