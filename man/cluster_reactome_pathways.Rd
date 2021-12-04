@@ -33,10 +33,11 @@ doesn't already exist.}
 }
 \value{
 {
-A named list containing two data frames, "all_pathways" and "rep_pathways"
-(see Details for more information). The function also saves heatmaps to
-".png" files in the provided output directory. The additional columns in the
-two results tables are:
+A named list containing three data frames, "all_pathways", "rep_pathways",
+and "missing_pathways". (see below for more information). The function
+also saves heatmaps to ".png" files in the provided output directory.
+
+The additional columns in the first two results tables are:
 
 \describe{
 \item{level_1, level_2}{The highest and second-highest levels for each
@@ -51,6 +52,8 @@ present in the provided input list (candidate genes)}
 The "rep_pathways" table contains all of the above, plus the column
 "n_pathways" which is the number of pathways from that cluster (the number in
 square brackets in the "heatmap_rep_pathways_clustered.png" output image).
+The "missing_pathways" table contains any input pathways that were not
+included in the analysis/figures, typically due to missing data.
 
 }
 }

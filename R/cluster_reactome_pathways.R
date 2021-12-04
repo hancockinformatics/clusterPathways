@@ -31,10 +31,11 @@
 #' @import vegan
 #'
 #' @return {
-#'  A named list containing two data frames, "all_pathways" and "rep_pathways"
-#'  (see Details for more information). The function also saves heatmaps to
-#'  ".png" files in the provided output directory. The additional columns in the
-#'  two results tables are:
+#'  A named list containing three data frames, "all_pathways", "rep_pathways",
+#'  and "missing_pathways". (see below for more information). The function
+#'  also saves heatmaps to ".png" files in the provided output directory.
+#'
+#'  The additional columns in the first two results tables are:
 #'
 #' \describe{
 #'   \item{level_1, level_2}{The highest and second-highest levels for each
@@ -49,6 +50,8 @@
 #' The "rep_pathways" table contains all of the above, plus the column
 #' "n_pathways" which is the number of pathways from that cluster (the number in
 #' square brackets in the "heatmap_rep_pathways_clustered.png" output image).
+#' The "missing_pathways" table contains any input pathways that were not
+#' included in the analysis/figures, typically due to missing data.
 #'
 #' }
 #'
@@ -76,9 +79,11 @@ cluster_reactome_pathways <- function(input_pathways,
   message("Tidying input...")
 
   if (species == "human") {
-    pathways_tidy_init <- input_pathways %>%
+    input_pathways_tidy <- input_pathways %>%
       remove_rownames() %>%
-      rename("id" = 1, "description" = 2) %>%
+      rename("id" = 1, "description" = 2)
+
+    pathways_tidy_init <- input_pathways_tidy %>%
       filter(
         id %in% reactome_categories_MMU_L1_L2$id,
         !description %in% reactome_categories_HSA_L1_L2$level_1
@@ -101,7 +106,11 @@ cluster_reactome_pathways <- function(input_pathways,
       split(x = .$bg_genes, f = .$id)
 
   } else if (species == "mouse") {
-    pathways_tidy_init <- input_pathways %>%
+    input_pathways_tidy <- input_pathways %>%
+      remove_rownames() %>%
+      rename("id" = 1, "description" = 2)
+
+    pathways_tidy_init <- input_pathways_tidy %>%
       remove_rownames() %>%
       rename("id" = 1, "description" = 2) %>%
       filter(
@@ -383,9 +392,13 @@ cluster_reactome_pathways <- function(input_pathways,
   out_table_2 <- out_table_1 %>%
     filter(description %in% initial_clusters_max_GR_chr$description)
 
+  out_table_3 <- input_pathways_tidy %>%
+    filter(!id %in% out_table_1$id)
+
   message("Done.\n")
   return(list(
     all_pathways = out_table_1,
-    rep_pathways = out_table_2
+    rep_pathways = out_table_2,
+    missing_pathways = out_table_3
   ))
 }
