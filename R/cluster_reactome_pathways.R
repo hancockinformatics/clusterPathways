@@ -26,6 +26,7 @@
 #' @import pheatmap
 #' @import purrr
 #' @import RColorBrewer
+#' @import rmarkdown
 #' @import stringr
 #' @import tibble
 #' @import vegan
@@ -101,8 +102,10 @@ cluster_reactome_pathways <- function(input_pathways,
     pathways_cd_genes <- reactome_genes_HSA %>%
       select(id, bg_genes) %>%
       separate_rows(bg_genes, sep = "; ") %>%
-      filter(id %in% pathways_tidy_init$id,
-             bg_genes %in% input_genes) %>%
+      filter(
+        id %in% pathways_tidy_init$id,
+        bg_genes %in% input_genes
+      ) %>%
       split(x = .$bg_genes, f = .$id)
 
   } else if (species == "mouse") {
@@ -130,8 +133,10 @@ cluster_reactome_pathways <- function(input_pathways,
     pathways_cd_genes <- reactome_genes_MMU %>%
       select(id, bg_genes) %>%
       separate_rows(bg_genes, sep = "; ") %>%
-      filter(id %in% pathways_tidy_init$id,
-             bg_genes %in% input_genes) %>%
+      filter(
+        id %in% pathways_tidy_init$id,
+        bg_genes %in% input_genes
+      ) %>%
       split(x = .$bg_genes, f = .$id)
   } else {
     stop("Argument 'species' must be one of 'human' (default) or 'mouse'.")
@@ -384,7 +389,7 @@ cluster_reactome_pathways <- function(input_pathways,
   message("Done.\n")
 
 
-  ## Set up output tables and return
+  ## Create output tables and summary Rmd report
   message("Generating output tables...")
   out_table_1 <- initial_clusters_max_GR %>%
     select(-description_n)
