@@ -12,15 +12,12 @@
 #'
 #' @return A matrix of overlapping genes among all pathways
 #'
-#' @references None.
-#'
-#' @seealso <https://www.github.com/hancockinformatics/clusterReactome>
-#'
 get_jac_mat <- function(list) {
   list %>%
     map(~data.frame(id = .x)) %>%
     bind_rows(.id = "name") %>%
     mutate(present = 1) %>%
+    distinct(name, id, .keep_all = TRUE) %>%
     pivot_wider(
       id_cols     = "id",
       names_from  = "name",

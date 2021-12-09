@@ -1,161 +1,191 @@
-#' Cluster Reactome pathways using the Jaccard index
+
+#' Cluster Reactome Pathways
 #'
-#' @param input_df Unaltered data frame of ReactomePA results. If there is a
-#'   "direction" column with up/down for each pathway, this information will be
-#'   added to the heatmaps.
-#' @param reactome_levels Data frame containing the first two levels for all
-#'   Reactome pathways in humans. Must have columns "id", "description",
-#'   "level_1", "level_2". If you don't have this information, the description
-#'   section contains a link to a script that will create this table for you.
-#' @param output_dir Directory to save results. It will be created if it doesn't
-#'   already exist.
-#' @param width Width of main output file in inches.
-#' @param height Height of main output file in inches.
+#' @param input_pathways Table of Reactome pathways to be clustered. Must have
+#'   the pathway ID in the first column, and description in the second. If a
+#'   "direction" column is present, it will be added to heatmap annotations (see
+#'   Details for more information).
+#' @param input_genes Vector of genes used to generate the `input_pathways`
+#'   table, e.g. a list of DE genes. Must be Ensembl IDs.
+#' @param species Either "human" (the default) or "mouse".
+#' @param output_dir Directory to save heatmaps into. It will be created if it
+#'   doesn't already exist.
+#' @param width Width of output heatmaps.
+#' @param height Height of output heatmaps.
+#'
+#' @description Using a data frame of Reactome pathways, create a pairwise
+#'   Jaccard matrix, then cluster pathways accordingly. Heatmaps/denrograms are
+#'   saved, and two results tables are returned as output containing all the
+#'   input pathways and which cluster they belonged to.
 #'
 #' @export
 #'
-#' @import pheatmap
-#' @import tibble
 #' @import dplyr
-#' @import stringr
-#' @import purrr
-#' @import vegan
-#' @import janitor
 #' @import glue
+#' @import janitor
+#' @import pheatmap
+#' @import purrr
 #' @import RColorBrewer
-#'
-#' @description Using the data frame of results output from
-#'   [ReactomePA](https://www.bioconductor.org/packages/ReactomePA/), create a
-#'   pairwise Jaccard matrix and cluster pathways accordingly.
-#'   Heatmaps/denrograms are saved, and two results tables are returned as
-#'   output.
+#' @import rmarkdown
+#' @import stringr
+#' @import tibble
+#' @import vegan
 #'
 #' @return {
-#'  A named list containing two data frames, "all_pathways" and "rep_pathways"
-#'  (see Details for more information). The function also saves heatmaps to
-#'  ".png" files in the provided output directory.
+#'  A named list containing three data frames, "all_pathways", "rep_pathways",
+#'  and "missing_pathways". (see below for more information). The function
+#'  also saves heatmaps to ".png" files in the provided output directory.
+#'
+#'  The additional columns in the first two results tables are:
 #'
 #' \describe{
-#'   \item{cluster}{Denotes the groups the pathways are placed within}
 #'   \item{level_1, level_2}{The highest and second-highest levels for each
-#'     pathway from the Reactoem hierarchy}
-#'   \item{candidate_genes}{The number genes annotated to the pathway that were
-#'     present in the list provided as input to ReactomePA}
-#'   \item{genes_in_pathway}{The total number of genes annotated to the pathway}
-#'   \item{gene_ratio}{`candidate_genes` / `genes_in_pathway`}
+#'     pathway from the Reactome hierarchy}
+#'   \item{n_bg_genes}{The total number of genes annotated to the pathway}
+#'   \item{n_cd_genes}{The number genes annotated to the pathway that were
+#'     present in the provided input list (candidate genes)}
+#'   \item{gene_ratio}{`n_cd_genes` / `n_bg_genes`}
+#'   \item{cluster}{Denotes the group each pathway is placed within}
 #' }
 #'
 #' The "rep_pathways" table contains all of the above, plus the column
 #' "n_pathways" which is the number of pathways from that cluster (the number in
 #' square brackets in the "heatmap_rep_pathways_clustered.png" output image).
+#' The "missing_pathways" table contains any input pathways that were not
+#' included in the analysis/figures, typically due to missing data.
 #'
 #' }
 #'
-#' @details The following columns must be present in "input_df": "ID",
-#'   "Description", "GeneRatio", "BgRatio", "pvalue", "p.adjust", "qvalue",
-#'   "geneID", "Count".
-#'
-#'   You will likely need to play with different values of width/height to get
-#'   images that are the proper size. In some cases it may be easier to modify
-#'   the png() calls directly, and ignore the arguments here.
-#'
-#'   Link to the script to create the Reactome levels table:
-#'   <https://github.com/hancockinformatics/misc_R_scripts/blob/master/R_scripts/get_reactome_L1_L2.R>
+#' @details The direction column must contain either "up" or "down" for each
+#'   pathway present.
 #'
 #' @references None.
 #'
-#' @seealso <https://www.github.com/hancockinformatics/clusterReactome>
+#' @seealso <https://www.github.com/hancockinformatics/clusterPathways>
 #'
-cluster_reactome_pathways <- function(
-  input_df,
-  reactome_levels,
-  output_dir,
-  width,
-  height
-) {
+cluster_reactome_pathways <- function(input_pathways,
+                                      input_genes,
+                                      species = "human",
+                                      output_dir,
+                                      width,
+                                      height) {
 
-  # Check inputs ----------------------------------------------------------
 
   if (!dir.exists(output_dir)) {
     dir.create(output_dir)
   }
 
-  colnames_to_check <- c(
-    "ID", "Description", "GeneRatio", "BgRatio", "pvalue", "p.adjust", "qvalue",
-    "geneID", "Count"
-  )
 
-  if (!all(colnames_to_check %in% colnames(input_df))) {
-    stop(
-      "Argument 'input_df' must contain the following columns: ",
-      paste0(colnames_to_check, collapse = ", "),
-      "."
+  ### Tidy and prep input
+  message("Tidying input...")
+
+  if (species == "human") {
+    pathway_table_1 <- input_pathways %>%
+      remove_rownames() %>%
+      rename("id" = 1, "description" = 2)
+
+    pathway_table_2 <- pathway_table_1 %>%
+      filter(
+        id %in% reactome_categories_HSA_L1_L2$id,
+        !description %in% reactome_categories_HSA_L1_L2$level_1
+      ) %>%
+      left_join(reactome_categories_HSA_L1_L2, by = c("id", "description"))
+
+
+    ### Get the background and candidate genes for each pathway
+    pathways_bg_genes <- reactome_genes_HSA %>%
+      select(id, bg_genes) %>%
+      separate_rows(bg_genes, sep = "; ") %>%
+      filter(id %in% pathway_table_2$id) %>%
+      split(x = .$bg_genes, f = .$id)
+
+    pathways_cd_genes <- reactome_genes_HSA %>%
+      select(id, bg_genes) %>%
+      separate_rows(bg_genes, sep = "; ") %>%
+      filter(
+        id %in% pathway_table_2$id,
+        bg_genes %in% input_genes
+      ) %>%
+      split(x = .$bg_genes, f = .$id)
+
+  } else if (species == "mouse") {
+    pathway_table_1 <- input_pathways %>%
+      remove_rownames() %>%
+      rename("id" = 1, "description" = 2)
+
+    pathway_table_2 <- pathway_table_1 %>%
+      remove_rownames() %>%
+      rename("id" = 1, "description" = 2) %>%
+      filter(
+        id %in% reactome_categories_MMU_L1_L2$id,
+        !description %in% reactome_categories_MMU_L1_L2$level_1
+      ) %>%
+      left_join(reactome_categories_MMU_L1_L2, by = c("id", "description"))
+
+
+    ### Get the background and candidate genes for each pathway
+    pathways_bg_genes <- reactome_genes_MMU %>%
+      select(id, bg_genes) %>%
+      separate_rows(bg_genes, sep = "; ") %>%
+      filter(id %in% pathway_table_2$id) %>%
+      split(x = .$bg_genes, f = .$id)
+
+    pathways_cd_genes <- reactome_genes_MMU %>%
+      select(id, bg_genes) %>%
+      separate_rows(bg_genes, sep = "; ") %>%
+      filter(
+        id %in% pathway_table_2$id,
+        bg_genes %in% input_genes
+      ) %>%
+      split(x = .$bg_genes, f = .$id)
+  } else {
+    stop("Argument 'species' must be one of 'human' (default) or 'mouse'.")
+  }
+
+
+  ### Find number of level 2 terms represented in input pathways
+  n_level2 <- length(unique(pathway_table_2$level_2))
+
+
+  ### Combine above info into a single table
+  pathway_table_3 <- pathway_table_2 %>%
+    mutate(
+      n_bg_genes = map_dbl(id, ~ length(pathways_bg_genes[[.x]])),
+      n_cd_genes = map_dbl(id, ~ length(pathways_cd_genes[[.x]])),
+      gene_ratio = round((n_cd_genes / n_bg_genes) * 100, digits = 1)
     )
-  }
-
-  if (!all(
-    c("id", "description", "level_1", "level_2") %in% colnames(reactome_levels)
-  )) {
-    stop(paste0(
-      "Argument 'reactome_levels' must contain the following columns: ",
-      "'id', 'level_1,' and 'level_2.'"
-    ))
-  }
-
-  message("Inputs OK...\n")
-
-
-  # Clean inputs ----------------------------------------------------------
-
-  message("Cleaning inputs...")
-  input_df_clean <- input_df %>%
-    remove_rownames() %>%
-    clean_names() %>%
-    as.data.frame() %>%
-    filter(!description %in% reactome_levels$level_1) %>%
-    left_join(select(reactome_levels, -description), by = "id")
-
-  input_list <- input_df_clean %>%
-    select(id, gene_id) %>%
-    deframe() %>%
-    str_split(., "/") %>%
-    set_names(input_df_clean$id)
-
-  n_level2 <- input_df_clean %>%
-    distinct(level_2) %>%
-    nrow()
-
   message("Done.\n")
 
 
-  # Create jaccard matrix -------------------------------------------------
-
-  jaccard_mat_id <- get_jac_mat(input_list) %>%
+  ### Create Jaccard matrix using internal function and `vegan` function
+  jaccard_mat_id <- pathways_cd_genes %>%
+    get_jac_mat() %>%
     t() %>%
-    vegdist(method = "jaccard", binary = TRUE, diag = TRUE) %>%
+    vegan::vegdist(
+      method = "jaccard",
+      binary = TRUE,
+      diag   = TRUE
+    ) %>%
     as.matrix()
 
 
-  # Convert IDs in matrix to pathway names --------------------------------
-
+  ### Convert the row/column names of matrix from pathway ID to description
   jaccard_mat_description <- jaccard_mat_id %>%
     as.data.frame() %>%
     rownames_to_column("id") %>%
     pivot_longer(-id, names_to = "id_2", values_to = "dist") %>%
-    left_join(select(input_df_clean, id, description), by = "id") %>%
-    left_join(select(input_df_clean, "id_2" = id, description), by = "id_2") %>%
-    pivot_wider(
-      description.x,
-      names_from = description.y,
-      values_from = "dist"
-    ) %>%
+    left_join(select(pathway_table_2, id, description), by = "id") %>%
+    left_join(select(pathway_table_2, "id_2" = id, description), by = "id_2") %>%
+    pivot_wider(description.x,
+                names_from = description.y,
+                values_from = "dist") %>%
     column_to_rownames("description.x")
 
 
-  ### Check for a direction column, and set up annotations if present
-  if ("direction" %in% colnames(input_df)) {
+  ### If present, set up the direction heatmap annotation
+  if ("direction" %in% colnames(pathway_table_2)) {
     message("Found direction column to be added to the heatmaps...\n")
-    ann_colour_table <- input_df_clean %>%
+    ann_colour_table <- pathway_table_2 %>%
       select(description, direction) %>%
       column_to_rownames("description")
     ann_colour_list <-
@@ -167,8 +197,7 @@ cluster_reactome_pathways <- function(
   }
 
 
-  # Create the initial heatmap --------------------------------------------
-
+  ### Create the initial heatmap of all pathways
   message("Creating first heatmap...")
   heatmaps_colours <-
     colorRampPalette(brewer.pal(n = 9, name = "Blues"))(10)
@@ -198,8 +227,7 @@ cluster_reactome_pathways <- function(
   message("Done.\n")
 
 
-  # Find representative pathways ------------------------------------------
-
+  ### Retrieve clusters from initial heatmap
   message("Finding representative pathways and plotting...")
   initial_clusters <- heatmap_initial$tree_row %>%
     cutree(k = n_level2) %>%
@@ -207,24 +235,9 @@ cluster_reactome_pathways <- function(
     set_names("cluster") %>%
     rownames_to_column("description")
 
-  pathways_w_GR <- input_df_clean %>%
-    select(
-      id,
-      description,
-      "candidate_genes" = count,
-      bg_ratio,
-      level_1,
-      level_2,
-      pvalue,
-      p_adjust
-    ) %>%
-    mutate(
-      genes_in_pathway = as.numeric(str_remove(bg_ratio, "/[0-9]{1,5}$")),
-      gene_ratio = candidate_genes / genes_in_pathway
-    ) %>%
-    select(-bg_ratio)
 
-  initial_clusters_max_GR <- pathways_w_GR %>%
+  ### Find the pathway for each cluster with the highest gene ratio
+  initial_clusters_max_GR <- pathway_table_3 %>%
     left_join(initial_clusters, by = "description") %>%
     group_by(cluster) %>%
     mutate(
@@ -243,23 +256,31 @@ cluster_reactome_pathways <- function(
     ungroup() %>%
     select(description, description_n)
 
+
+  ### Subset the matrix to just the representative pathways identified above
   rep_pathway_mat <- jaccard_mat_description[
     initial_clusters_max_GR_chr$description,
     initial_clusters_max_GR_chr$description
   ]
 
   rep_pathway_mat_n <- rep_pathway_mat
-  colnames(rep_pathway_mat_n) <- initial_clusters_max_GR_chr$description_n
-  rownames(rep_pathway_mat_n) <- initial_clusters_max_GR_chr$description_n
+  colnames(rep_pathway_mat_n) <-
+    initial_clusters_max_GR_chr$description_n
+  rownames(rep_pathway_mat_n) <-
+    initial_clusters_max_GR_chr$description_n
 
   if (!is.null(ann_colour_table)) {
-    ann_colour_table_n <- input_df_clean %>%
+    ann_colour_table_n <- pathway_table_2 %>%
       left_join(initial_clusters_max_GR_chr, by = "description") %>%
       select(description_n, direction) %>%
       filter(!is.na(description_n)) %>%
       column_to_rownames("description_n")
+  } else {
+    ann_colour_table_n <- NULL
   }
 
+
+  ### Create the representative heatmap
   heatmap_reps <- pheatmap(
     mat                  = rep_pathway_mat_n,
     show_colnames        = FALSE,
@@ -276,7 +297,7 @@ cluster_reactome_pathways <- function(
   png(
     glue("{output_dir}/heatmap_rep_pathways_clustered.png"),
     width  = width,
-    height = height * 0.6,
+    height = height,
     units  = "in",
     res    = 150
   )
@@ -285,75 +306,65 @@ cluster_reactome_pathways <- function(
   message("Done.\n")
 
 
-  # Create a heatmap per level_1 group ------------------------------------
-
+  ### Create heatmaps per Level 1 pathway/group
   message("Creating heatmaps per Level 1 terms...")
-  level_1_groups <- input_df_clean %>%
+  level_1_groups <- pathway_table_2 %>%
     select(description, level_1) %>%
     split(x = .$description, f = .$level_1) %>%
-    keep(~length(.x) >= 5)
+    keep( ~ length(.x) >= 5)
 
   level_1_mats <- level_1_groups %>% map(function(x) {
     jaccard_mat_description[x, x]
   })
 
-  level_1_n_clust <- input_df_clean %>%
+  level_1_n_clust <- pathway_table_2 %>%
     select(level_1, level_2) %>%
     split(x = .$level_2, f = .$level_1) %>%
-    map(~length(unique(.x))) %>%
+    map( ~ length(unique(.x))) %>%
     magrittr::extract(names(level_1_groups))
 
-  pwalk(
-    list(level_1_mats, names(level_1_mats), level_1_n_clust),
-    function(input_mat, mat_name, mat_n_clust) {
-      png(
-        glue("{output_dir}/level1_heatmap_{str_replace_all(mat_name, ' ', '_')}.png"),
-        width  = 16,
-        height = 12,
-        units  = "in",
-        res    = 150
-      )
-      pheatmap(
-        mat                  = input_mat,
-        show_colnames        = FALSE,
-        color                = heatmaps_colours,
-        annotation_row       = ann_colour_table,
-        annotation_colors    = ann_colour_list,
-        annotation_names_row = FALSE,
-        fontsize             = 14,
-        treeheight_col       = 0,
-        cutree_rows          = mat_n_clust,
-        main                 = mat_name
-      )
-      dev.off()
-    }
-  )
+  pwalk(list(level_1_mats, names(level_1_mats), level_1_n_clust),
+        function(input_mat, mat_name, mat_n_clust) {
+          png(
+            glue("{output_dir}/level1_heatmap_{str_replace_all(mat_name, ' ', '_')}.png"),
+            width  = 16,
+            height = 12,
+            units  = "in",
+            res    = 150
+          )
+          pheatmap(
+            mat                  = input_mat,
+            show_colnames        = FALSE,
+            color                = heatmaps_colours,
+            annotation_row       = ann_colour_table,
+            annotation_colors    = ann_colour_list,
+            annotation_names_row = FALSE,
+            fontsize             = 14,
+            treeheight_col       = 0,
+            cutree_rows          = mat_n_clust,
+            main                 = mat_name
+          )
+          dev.off()
+        })
 
-  ### Leftover pathways in one group
-  leftover_pathways <- input_df_clean %>%
+  ### Put all the "leftover" pathways in one group/heatmap
+  leftover_pathways <- pathway_table_2 %>%
     select(description, level_1) %>%
     split(x = .$description, f = .$level_1) %>%
-    keep(~length(.x) < 5) %>%
+    keep( ~ length(.x) < 5) %>%
     flatten() %>%
     as.character()
 
   leftover_sig_jac_mat <-
     jaccard_mat_description[leftover_pathways, leftover_pathways]
 
-  leftover_n_clust <- input_df_clean %>%
+  leftover_n_clust <- pathway_table_2 %>%
     filter(description %in% leftover_pathways) %>%
     pull(level_2) %>%
     unique() %>%
     length()
 
-  png(
-    glue("{output_dir}/level1_heatmap_miscellaneous.png"),
-    width  = 16,
-    height = 12,
-    units  = "in",
-    res    = 150
-  )
-  pheatmap(
+  heatmap_leftover <- pheatmap(
     mat                  = leftover_sig_jac_mat,
     show_colnames        = FALSE,
     color                = heatmaps_colours,
@@ -363,51 +374,42 @@ cluster_reactome_pathways <- function(
     fontsize             = 14,
     treeheight_col       = 0,
     cutree_rows          = leftover_n_clust,
-    main                 = "Miscellaneous pathways"
+    main                 = "Miscellaneous pathways",
+    silent               = TRUE
   )
+  png(
+    glue("{output_dir}/level1_heatmap_miscellaneous.png"),
+    width  = 16,
+    height = 12,
+    units  = "in",
+    res    = 150
+  )
+  print(heatmap_leftover)
   dev.off()
   message("Done.\n")
 
 
-  # Create output tables --------------------------------------------------
+  ## Create output tables and summary Rmd report
+  message("Generating output tables...")
+  out_table_1 <- initial_clusters_max_GR %>%
+    select(-description_n)
 
-  message("Generate output tables...")
-  table_1 <- pathways_w_GR %>%
-    left_join(initial_clusters, by = "description") %>%
-    arrange(cluster, desc(gene_ratio)) %>%
-    relocate(
-      cluster,
-      description,
-      id,
-      level_1,
-      level_2,
-      candidate_genes,
-      genes_in_pathway,
-      gene_ratio,
-      pvalue,
-      p_adjust
-    )
+  out_table_2 <- out_table_1 %>%
+    filter(description %in% initial_clusters_max_GR_chr$description)
 
-  table_2 <- initial_clusters_max_GR %>%
-    select(-description_n) %>%
-    filter(description %in% initial_clusters_max_GR_chr$description) %>%
-    relocate(
-      cluster,
-      n_pathways,
-      description,
-      id,
-      level_1,
-      level_2,
-      candidate_genes,
-      genes_in_pathway,
-      gene_ratio,
-      pvalue,
-      p_adjust
-    )
-  message("Done.")
+  out_table_3 <- pathway_table_1 %>%
+    filter(!id %in% out_table_1$id)
 
+  rmarkdown::render(
+    input = system.file("rmd", "results.Rmd", package = "clusterPathways"),
+    params = list(table_1 = out_table_1, table_2 = out_table_2),
+    output_dir = output_dir
+  )
+
+  message("Done.\n")
   return(list(
-    all_pathways = table_1,
-    rep_pathways = table_2
+    all_pathways = out_table_1,
+    rep_pathways = out_table_2,
+    missing_pathways = out_table_3
   ))
 }

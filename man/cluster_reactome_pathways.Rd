@@ -2,71 +2,74 @@
 % Please edit documentation in R/cluster_reactome_pathways.R
 \name{cluster_reactome_pathways}
 \alias{cluster_reactome_pathways}
-\title{Cluster Reactome pathways using the Jaccard index}
+\title{Cluster Reactome Pathways}
 \usage{
-cluster_reactome_pathways(input_df, reactome_levels, output_dir, width, height)
+cluster_reactome_pathways(
+  input_pathways,
+  input_genes,
+  species = "human",
+  output_dir,
+  width,
+  height
+)
 }
 \arguments{
-\item{input_df}{Unaltered data frame of ReactomePA results. If there is a
-"direction" column with up/down for each pathway, this information will be
-added to the heatmaps.}
+\item{input_pathways}{Table of Reactome pathways to be clustered. Must have
+the pathway ID in the first column, and description in the second. If a
+"direction" column is present, it will be added to heatmap annotations (see
+Details for more information).}
 
-\item{reactome_levels}{Data frame containing the first two levels for all
-Reactome pathways in humans. Must have columns "id", "description",
-"level_1", "level_2". If you don't have this information, the description
-section contains a link to a script that will create this table for you.}
+\item{input_genes}{Genes used to generate the \code{input_pathways} table, e.g. a
+list of DE genes. Must be Ensembl IDs.}
 
-\item{output_dir}{Directory to save results. It will be created if it doesn't
-already exist.}
+\item{species}{Either "human" (the default) or "mouse".}
 
-\item{width}{Width of main output file in inches.}
+\item{output_dir}{Directory to save heatmaps into. It will be created if it
+doesn't already exist.}
 
-\item{height}{Height of main output file in inches.}
+\item{width}{Width of output heatmaps.}
+
+\item{height}{Height of output heatmaps.}
 }
 \value{
 {
-A named list containing two data frames, "all_pathways" and "rep_pathways"
-(see Details for more information). The function also saves heatmaps to
-".png" files in the provided output directory.
+A named list containing three data frames, "all_pathways", "rep_pathways",
+and "missing_pathways". (see below for more information). The function
+also saves heatmaps to ".png" files in the provided output directory.
+
+The additional columns in the first two results tables are:
 
 \describe{
-\item{cluster}{Denotes the groups the pathways are placed within}
 \item{level_1, level_2}{The highest and second-highest levels for each
-pathway from the Reactoem hierarchy}
-\item{candidate_genes}{The number genes annotated to the pathway that were
-present in the list provided as input to ReactomePA}
-\item{genes_in_pathway}{The total number of genes annotated to the pathway}
-\item{gene_ratio}{\code{candidate_genes} / \code{genes_in_pathway}}
+pathway from the Reactome hierarchy}
+\item{n_bg_genes}{The total number of genes annotated to the pathway}
+\item{n_cd_genes}{The number genes annotated to the pathway that were
+present in the provided input list (candidate genes)}
+\item{gene_ratio}{\code{n_cd_genes} / \code{n_bg_genes}}
+\item{cluster}{Denotes the group each pathway is placed within}
 }
 
 The "rep_pathways" table contains all of the above, plus the column
 "n_pathways" which is the number of pathways from that cluster (the number in
 square brackets in the "heatmap_rep_pathways_clustered.png" output image).
+The "missing_pathways" table contains any input pathways that were not
+included in the analysis/figures, typically due to missing data.
 
 }
 }
 \description{
-Using the data frame of results output from
-\href{https://www.bioconductor.org/packages/ReactomePA/}{ReactomePA}, create a
-pairwise Jaccard matrix and cluster pathways accordingly.
-Heatmaps/denrograms are saved, and two results tables are returned as
-output.
+Using a data frame of Reactome pathways, create a pairwise
+Jaccard matrix, then cluster pathways accordingly. Heatmaps/denrograms are
+saved, and two results tables are returned as output containing all the
+input pathways and which cluster they belonged to.
 }
 \details{
-The following columns must be present in "input_df": "ID",
-"Description", "GeneRatio", "BgRatio", "pvalue", "p.adjust", "qvalue",
-"geneID", "Count".
-
-You will likely need to play with different values of width/height to get
-images that are the proper size. In some cases it may be easier to modify
-the png() calls directly, and ignore the arguments here.
-
-Link to the script to create the Reactome levels table:
-\url{https://github.com/hancockinformatics/misc_R_scripts/blob/master/R_scripts/get_reactome_L1_L2.R}
+The direction column must contain either "up" or "down" for each
+pathway present.
 }
 \references{
 None.
 }
 \seealso{
-\url{https://www.github.com/hancockinformatics/clusterReactome}
+\url{https://www.github.com/hancockinformatics/clusterPathways}
 }
