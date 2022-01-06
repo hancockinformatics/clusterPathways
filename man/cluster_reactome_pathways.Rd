@@ -8,9 +8,9 @@ cluster_reactome_pathways(
   input_pathways,
   input_genes,
   species = "human",
-  output_dir,
-  width,
-  height
+  output_dir = NULL,
+  width = 10,
+  height = 20
 )
 }
 \arguments{
@@ -27,9 +27,9 @@ annotations (see Details for more information).}
 \item{output_dir}{Directory to save heatmaps into. It will be created if it
 doesn't already exist.}
 
-\item{width}{Width of output heatmaps.}
+\item{width}{Width and height of output heatmaps in inches.}
 
-\item{height}{Height of output heatmaps.}
+\item{height}{Width and height of output heatmaps in inches.}
 }
 \value{
 {
