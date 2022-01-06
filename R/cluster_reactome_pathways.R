@@ -101,6 +101,11 @@ cluster_reactome_pathways <- function(input_pathways,
     stop("Must specify an output directory for results.")
   }
 
+  if (!is.character(input_genes)) {
+    stop("Argument 'input_genes' must be a character vector of Ensembl gene ",
+         "IDs.")
+  }
+
 
   ### Tidy and prep input
   message("Tidying input...")
