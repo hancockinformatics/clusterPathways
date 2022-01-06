@@ -3,10 +3,10 @@
 #'
 #' @param input_pathways Table of Reactome pathways to be clustered. Must have
 #'   the pathway ID in the first column, and description in the second. If a
-#'   "direction" column is present, it will be added to heatmap annotations (see
-#'   Details for more information).
-#' @param input_genes Vector of genes used to generate the `input_pathways`
-#'   table, e.g. a list of DE genes. Must be Ensembl IDs.
+#'   "direction" column (case sensitive) is present, it will be added to heatmap
+#'   annotations (see Details for more information).
+#' @param input_genes Character vector of genes used to generate the
+#'   `input_pathways` table, e.g. a list of DE genes. Must be Ensembl IDs.
 #' @param species Either "human" (the default) or "mouse".
 #' @param output_dir Directory to save heatmaps into. It will be created if it
 #'   doesn't already exist.
@@ -57,9 +57,31 @@
 #' }
 #'
 #' @details The direction column must contain either "up" or "down" for each
-#'   pathway present.
+#'   pathway present. Both column name and contents are case-sensitive.
 #'
 #' @references None.
+#'
+#' @examples
+#' \dontrun{
+#'   library(clusterPathways)
+#'   library(tidyverse)
+#'
+#'   # Load table of pathways
+#'   my_pathways <- read_csv("pathway_enrichment_result.csv")
+#'
+#'   # Load list of genes, which were tested to obtain the above pathways
+#'   my_genes <- read_csv("de_genes.csv") %>% pull(ensembl_gene_id)
+#'
+#'   # Run cluster_reactome_pathways
+#'   cluster_reactome_pathways(
+#'     input_pathways = my_pathways,
+#'     input_genes = my_genes,
+#'     species = "human",
+#'     output_dir = "clustered_pathways",
+#'     width = 18,
+#'     height = 30
+#'   )
+#' }
 #'
 #' @seealso <https://www.github.com/hancockinformatics/clusterPathways>
 #'
