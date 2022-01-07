@@ -114,6 +114,11 @@ cluster_reactome_pathways <- function(input_pathways,
     remove_rownames() %>%
     rename("id" = 1, "description" = 2)
 
+  if ( any(duplicated(pathway_table_1$id)) ) {
+    stop("Your 'input_pathways' contains duplicate IDs. Please remove any ",
+         "duplicated pathways and try again.")
+  }
+
   if (species == "human") {
     pathway_table_2 <- pathway_table_1 %>%
       filter(
