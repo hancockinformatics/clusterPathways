@@ -221,6 +221,7 @@ cluster_reactome_pathways <- function(input_pathways,
     message("Found direction column to be added to the heatmaps...\n")
     ann_colour_table <- pathway_table_2 %>%
       select(description, direction) %>%
+      mutate(direction = str_to_lower(direction)) %>%
       column_to_rownames("description")
     ann_colour_list <-
       list(direction = c("down" = "springgreen3", "up" = "firebrick"))
