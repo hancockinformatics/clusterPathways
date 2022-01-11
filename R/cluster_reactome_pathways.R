@@ -3,15 +3,15 @@
 #'
 #' @param input_pathways Table of Reactome pathways to be clustered. Must have
 #'   the pathway ID in the first column, and description in the second. If a
-#'   "direction" column is present, it will be added to heatmap annotations (see
-#'   Details for more information).
-#' @param input_genes Vector of genes used to generate the `input_pathways`
-#'   table, e.g. a list of DE genes. Must be Ensembl IDs.
+#'   "direction" column (case sensitive) is present, it will be added to heatmap
+#'   annotations (see Details for more information).
+#' @param input_genes Character vector of genes used to generate the
+#'   `input_pathways` table, e.g. a list of DE genes. Must be Ensembl IDs.
 #' @param species Either "human" (the default) or "mouse".
 #' @param output_dir Directory to save heatmaps into. It will be created if it
 #'   doesn't already exist.
-#' @param width Width of output heatmaps.
-#' @param height Height of output heatmaps.
+#' @param width Width and height of output heatmaps in inches.
+#' @param height Width and height of output heatmaps in inches.
 #'
 #' @description Using a data frame of Reactome pathways, create a pairwise
 #'   Jaccard matrix, then cluster pathways accordingly. Heatmaps/denrograms are
@@ -57,33 +57,69 @@
 #' }
 #'
 #' @details The direction column must contain either "up" or "down" for each
-#'   pathway present.
+#'   pathway present. Both column name and contents are case-sensitive.
 #'
 #' @references None.
+#'
+#' @examples
+#' \dontrun{
+#'   library(clusterPathways)
+#'   library(tidyverse)
+#'
+#'   # Load table of pathways
+#'   my_pathways <- read_csv("pathway_enrichment_result.csv")
+#'
+#'   # Load list of genes, which were tested to obtain the above pathways
+#'   my_genes <- read_csv("de_genes.csv") %>% pull(ensembl_gene_id)
+#'
+#'   # Run cluster_reactome_pathways
+#'   cluster_reactome_pathways(
+#'     input_pathways = my_pathways,
+#'     input_genes = my_genes,
+#'     species = "human",
+#'     output_dir = "clustered_pathways",
+#'     width = 18,
+#'     height = 30
+#'   )
+#' }
 #'
 #' @seealso <https://www.github.com/hancockinformatics/clusterPathways>
 #'
 cluster_reactome_pathways <- function(input_pathways,
                                       input_genes,
                                       species = "human",
-                                      output_dir,
-                                      width,
-                                      height) {
+                                      output_dir = NULL,
+                                      width = 10,
+                                      height = 20) {
 
 
-  if (!dir.exists(output_dir)) {
-    dir.create(output_dir)
+  if (!is.null(output_dir)) {
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir)
+    }
+  } else {
+    stop("Must specify an output directory for results.")
+  }
+
+  if (!is.character(input_genes)) {
+    stop("Argument 'input_genes' must be a character vector of Ensembl gene ",
+         "IDs.")
   }
 
 
   ### Tidy and prep input
   message("Tidying input...")
 
-  if (species == "human") {
-    pathway_table_1 <- input_pathways %>%
-      remove_rownames() %>%
-      rename("id" = 1, "description" = 2)
+  pathway_table_1 <- input_pathways %>%
+    remove_rownames() %>%
+    rename("id" = 1, "description" = 2)
 
+  if ( any(duplicated(pathway_table_1$id)) ) {
+    stop("Your 'input_pathways' contains duplicate IDs. Please remove any ",
+         "duplicated pathways and try again.")
+  }
+
+  if (species == "human") {
     pathway_table_2 <- pathway_table_1 %>%
       filter(
         id %in% reactome_categories_HSA_L1_L2$id,
@@ -109,10 +145,6 @@ cluster_reactome_pathways <- function(input_pathways,
       split(x = .$bg_genes, f = .$id)
 
   } else if (species == "mouse") {
-    pathway_table_1 <- input_pathways %>%
-      remove_rownames() %>%
-      rename("id" = 1, "description" = 2)
-
     pathway_table_2 <- pathway_table_1 %>%
       remove_rownames() %>%
       rename("id" = 1, "description" = 2) %>%
@@ -150,8 +182,8 @@ cluster_reactome_pathways <- function(input_pathways,
   ### Combine above info into a single table
   pathway_table_3 <- pathway_table_2 %>%
     mutate(
-      n_bg_genes = map_dbl(id, ~ length(pathways_bg_genes[[.x]])),
-      n_cd_genes = map_dbl(id, ~ length(pathways_cd_genes[[.x]])),
+      n_bg_genes = map_dbl(id, ~length(pathways_bg_genes[[.x]])),
+      n_cd_genes = map_dbl(id, ~length(pathways_cd_genes[[.x]])),
       gene_ratio = round((n_cd_genes / n_bg_genes) * 100, digits = 1)
     )
   message("Done.\n")
@@ -176,9 +208,11 @@ cluster_reactome_pathways <- function(input_pathways,
     pivot_longer(-id, names_to = "id_2", values_to = "dist") %>%
     left_join(select(pathway_table_2, id, description), by = "id") %>%
     left_join(select(pathway_table_2, "id_2" = id, description), by = "id_2") %>%
-    pivot_wider(description.x,
-                names_from = description.y,
-                values_from = "dist") %>%
+    pivot_wider(
+      description.x,
+      names_from = description.y,
+      values_from = "dist"
+    ) %>%
     column_to_rownames("description.x")
 
 
@@ -187,6 +221,7 @@ cluster_reactome_pathways <- function(input_pathways,
     message("Found direction column to be added to the heatmaps...\n")
     ann_colour_table <- pathway_table_2 %>%
       select(description, direction) %>%
+      mutate(direction = str_to_lower(direction)) %>%
       column_to_rownames("description")
     ann_colour_list <-
       list(direction = c("down" = "springgreen3", "up" = "firebrick"))

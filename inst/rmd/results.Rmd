@@ -12,11 +12,13 @@ params:
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
-  echo    = FALSE, 
-  message = FALSE, 
-  warning = FALSE, 
+  echo    = FALSE,
+  message = FALSE,
+  warning = FALSE,
   comment = ""
 )
+
+library(dplyr)
 
 options(
   DT.options = list(
@@ -28,14 +30,18 @@ options(
 
 ## All pathways
 ```{r table_1}
-DT::datatable(params$table_1, rownames = FALSE)
+params$table_1 %>% 
+  arrange(cluster, desc(gene_ratio)) %>% 
+  DT::datatable(rownames = FALSE)
 ```
 
 <br>
 
 ## Representative pathways
 ```{r table_2}
-DT::datatable(params$table_2, rownames = FALSE)
+params$table_2 %>% 
+  arrange(cluster) %>% 
+  DT::datatable(rownames = FALSE)
 ```
 
 <br>
