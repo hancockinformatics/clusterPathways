@@ -427,7 +427,11 @@ cluster_reactome_pathways <- function(input_pathways,
   ## Create output tables and summary Rmd report
   message("Generating output tables...")
   out_table_1 <- initial_clusters_max_GR %>%
-    select(-description_n)
+    select(-description_n) %>%
+    mutate(
+      cd_genes = map(id, ~paste0(pathways_cd_genes[[.x]], collapse = "; ")),
+      bg_genes = map(id, ~paste0(pathways_bg_genes[[.x]], collapse = "; "))
+    )
 
   out_table_2 <- out_table_1 %>%
     filter(description %in% initial_clusters_max_GR_chr$description)
