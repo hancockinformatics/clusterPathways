@@ -441,7 +441,10 @@ cluster_reactome_pathways <- function(input_pathways,
 
   rmarkdown::render(
     input = system.file("rmd", "results.Rmd", package = "clusterPathways"),
-    params = list(table_1 = out_table_1, table_2 = out_table_2),
+    params = list(
+      table_1 = select(out_table_1, -c(cd_genes, bg_genes)),
+      table_2 = select(out_table_2, -c(cd_genes, bg_genes))
+    ),
     output_dir = output_dir
   )
 
