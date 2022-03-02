@@ -429,8 +429,8 @@ cluster_reactome_pathways <- function(input_pathways,
   out_table_1 <- initial_clusters_max_GR %>%
     select(-description_n) %>%
     mutate(
-      cd_genes = map(id, ~paste0(pathways_cd_genes[[.x]], collapse = "; ")),
-      bg_genes = map(id, ~paste0(pathways_bg_genes[[.x]], collapse = "; "))
+      cd_genes = map_chr(id, ~paste0(pathways_cd_genes[[.x]], collapse = "; ")),
+      bg_genes = map_chr(id, ~paste0(pathways_bg_genes[[.x]], collapse = "; "))
     )
 
   out_table_2 <- out_table_1 %>%
