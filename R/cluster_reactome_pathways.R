@@ -109,84 +109,32 @@ cluster_reactome_pathways <- function(input_pathways,
 
   ### Tidy and prep input
   message("Tidying input...")
-
   pathway_table_1 <- input_pathways %>%
     remove_rownames() %>%
     rename("id" = 1, "description" = 2)
 
-  if ( any(duplicated(pathway_table_1$id)) ) {
-    stop("Your 'input_pathways' contains duplicate IDs. Please remove any ",
-         "duplicated pathways and try again.")
-  }
+  pathway_table_3 <- get_gene_ratio(
+    input_pathways = pathway_table_1,
+    input_genes    = input_genes,
+    species        = species
+  )
 
-  if (species == "human") {
-    pathway_table_2 <- pathway_table_1 %>%
-      filter(
-        id %in% reactome_categories_HSA_L1_L2$id,
-        !description %in% reactome_categories_HSA_L1_L2$level_1
-      ) %>%
-      left_join(reactome_categories_HSA_L1_L2, by = c("id", "description"))
+  pathway_table_2 <- pathway_table_3 %>%
+    dplyr::select(-c(n_bg_genes, n_cd_genes, cd_genes, bg_genes, gene_ratio))
 
 
-    ### Get the background and candidate genes for each pathway
-    pathways_bg_genes <- reactome_genes_HSA %>%
-      select(id, bg_genes) %>%
-      separate_rows(bg_genes, sep = "; ") %>%
-      filter(id %in% pathway_table_2$id) %>%
-      split(x = .$bg_genes, f = .$id)
+  ### Retrieve lists of the candidate and background genes for next steps
+  pathways_cd_genes <- pathway_table_3 %>%
+    separate_rows(cd_genes, sep = "; ") %>%
+    split(x = .$cd_genes, f = .$id)
 
-    pathways_cd_genes <- reactome_genes_HSA %>%
-      select(id, bg_genes) %>%
-      separate_rows(bg_genes, sep = "; ") %>%
-      filter(
-        id %in% pathway_table_2$id,
-        bg_genes %in% input_genes
-      ) %>%
-      split(x = .$bg_genes, f = .$id)
-
-  } else if (species == "mouse") {
-    pathway_table_2 <- pathway_table_1 %>%
-      remove_rownames() %>%
-      rename("id" = 1, "description" = 2) %>%
-      filter(
-        id %in% reactome_categories_MMU_L1_L2$id,
-        !description %in% reactome_categories_MMU_L1_L2$level_1
-      ) %>%
-      left_join(reactome_categories_MMU_L1_L2, by = c("id", "description"))
-
-
-    ### Get the background and candidate genes for each pathway
-    pathways_bg_genes <- reactome_genes_MMU %>%
-      select(id, bg_genes) %>%
-      separate_rows(bg_genes, sep = "; ") %>%
-      filter(id %in% pathway_table_2$id) %>%
-      split(x = .$bg_genes, f = .$id)
-
-    pathways_cd_genes <- reactome_genes_MMU %>%
-      select(id, bg_genes) %>%
-      separate_rows(bg_genes, sep = "; ") %>%
-      filter(
-        id %in% pathway_table_2$id,
-        bg_genes %in% input_genes
-      ) %>%
-      split(x = .$bg_genes, f = .$id)
-  } else {
-    stop("Argument 'species' must be one of 'human' (default) or 'mouse'.")
-  }
+  pathways_bg_genes <- pathway_table_3 %>%
+    separate_rows(bg_genes, sep = "; ") %>%
+    split(x = .$bg_genes, f = .$id)
 
 
   ### Find number of level 2 terms represented in input pathways
   n_level2 <- length(unique(pathway_table_2$level_2))
-
-
-  ### Combine above info into a single table
-  pathway_table_3 <- pathway_table_2 %>%
-    mutate(
-      n_bg_genes = map_dbl(id, ~length(pathways_bg_genes[[.x]])),
-      n_cd_genes = map_dbl(id, ~length(pathways_cd_genes[[.x]])),
-      gene_ratio = round((n_cd_genes / n_bg_genes) * 100, digits = 1)
-    )
-  message("Done.\n")
 
 
   ### Create Jaccard matrix using internal function and `vegan` function
@@ -450,8 +398,8 @@ cluster_reactome_pathways <- function(input_pathways,
 
   message("Done.\n")
   return(list(
-    all_pathways = out_table_1,
-    rep_pathways = out_table_2,
+    all_pathways     = out_table_1,
+    rep_pathways     = out_table_2,
     missing_pathways = out_table_3
   ))
 }
