@@ -6,7 +6,8 @@
 #'   `input_pathways` table, e.g. a list of DE genes. Must be Ensembl IDs.
 #' @param species Either "human" (the default) or "mouse"
 #'
-#' @return
+#' @return A data frame (tibble) of gene ratio information for each input
+#'   pathway
 #'
 #' @export
 #'

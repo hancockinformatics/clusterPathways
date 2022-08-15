@@ -16,7 +16,8 @@ the pathway ID in the first column, and description in the second.}
 \item{species}{Either "human" (the default) or "mouse"}
 }
 \value{
-
+A data frame (tibble) of gene ratio information for each input
+pathway
 }
 \description{
 Title
