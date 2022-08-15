@@ -1,4 +1,4 @@
-#' Title
+#' Calculate gene ratio for pathways
 #'
 #' @param input_pathways Table of Reactome pathways to be clustered. Must have
 #'   the pathway ID in the first column, and description in the second.
@@ -6,8 +6,9 @@
 #'   `input_pathways` table, e.g. a list of DE genes. Must be Ensembl IDs.
 #' @param species Either "human" (the default) or "mouse"
 #'
-#' @return A data frame (tibble) of gene ratio information for each input
-#'   pathway
+#' @description Returns a table of the input pathways with added statistics,
+#'   chiefly the gene ratio for the pathway, along with number used in the
+#'   calculation (e.g. number of background and candidate genes)
 #'
 #' @export
 #'
@@ -16,7 +17,23 @@
 #' @import tidyr
 #' @import purrr
 #'
+#' @return {
+#' A data frame (tibble) of gene ratio information for each input
+#' pathway. The output table contains the following additional columns:
+#'
+#' \describe{
+#'   \item{level_1, level_2}{The highest and second-highest levels for each
+#'     pathway from the Reactome hierarchy}
+#'   \item{n_bg_genes}{The total number of genes annotated to the pathway}
+#'   \item{n_cd_genes}{The number genes annotated to the pathway that were
+#'     present in the provided input list (candidate genes)}
+#'   \item{gene_ratio}{`n_cd_genes` / `n_bg_genes`}
+#'   }
+#' }
+#'
 #' @references None.
+#'
+#' @seealso <https://www.github.com/hancockinformatics/clusterPathways>
 #'
 get_gene_ratio <- function(input_pathways, input_genes, species = "human") {
 

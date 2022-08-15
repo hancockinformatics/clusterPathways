@@ -2,15 +2,20 @@
 #'
 #' @param list A named list of pathways and their constituent genes
 #'
+#' @description An internal helper function to construct a matrix from the list
+#' of pathways and their genes.
+#'
 #' @import purrr
 #' @import dplyr
 #' @import tidyr
 #' @import tibble
 #'
-#' @description An internal helper function to construct a matrix from the list
-#' of pathways and their genes.
 #'
 #' @return A matrix of overlapping genes among all pathways
+#'
+#' @references None.
+#'
+#' @seealso <https://www.github.com/hancockinformatics/clusterPathways>
 #'
 get_jac_mat <- function(list) {
   list %>%

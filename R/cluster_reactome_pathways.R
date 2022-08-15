@@ -1,4 +1,3 @@
-
 #' Cluster Reactome Pathways
 #'
 #' @param input_pathways Table of Reactome pathways to be clustered. Must have
@@ -303,7 +302,7 @@ cluster_reactome_pathways <- function(input_pathways,
   level_1_n_clust <- pathway_table_2 %>%
     select(level_1, level_2) %>%
     split(x = .$level_2, f = .$level_1) %>%
-    map( ~ length(unique(.x))) %>%
+    map(~length(unique(.x))) %>%
     magrittr::extract(names(level_1_groups))
 
   pwalk(list(level_1_mats, names(level_1_mats), level_1_n_clust),

@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_gene_ratio.R
 \name{get_gene_ratio}
 \alias{get_gene_ratio}
-\title{Title}
+\title{Calculate gene ratio for pathways}
 \usage{
 get_gene_ratio(input_pathways, input_genes, species = "human")
 }
@@ -16,12 +16,28 @@ the pathway ID in the first column, and description in the second.}
 \item{species}{Either "human" (the default) or "mouse"}
 }
 \value{
+{
 A data frame (tibble) of gene ratio information for each input
-pathway
+pathway. The output table contains the following additional columns:
+
+\describe{
+\item{level_1, level_2}{The highest and second-highest levels for each
+pathway from the Reactome hierarchy}
+\item{n_bg_genes}{The total number of genes annotated to the pathway}
+\item{n_cd_genes}{The number genes annotated to the pathway that were
+present in the provided input list (candidate genes)}
+\item{gene_ratio}{\code{n_cd_genes} / \code{n_bg_genes}}
+}
+}
 }
 \description{
-Title
+Returns a table of the input pathways with added statistics,
+chiefly the gene ratio for the pathway, along with number used in the
+calculation (e.g. number of background and candidate genes)
 }
 \references{
 None.
+}
+\seealso{
+\url{https://www.github.com/hancockinformatics/clusterPathways}
 }

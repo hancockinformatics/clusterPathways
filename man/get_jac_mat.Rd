@@ -16,3 +16,9 @@ A matrix of overlapping genes among all pathways
 An internal helper function to construct a matrix from the list
 of pathways and their genes.
 }
+\references{
+None.
+}
+\seealso{
+\url{https://www.github.com/hancockinformatics/clusterPathways}
+}
