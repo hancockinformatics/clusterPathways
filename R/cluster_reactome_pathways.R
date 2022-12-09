@@ -307,26 +307,31 @@ cluster_reactome_pathways <- function(input_pathways,
 
   pwalk(list(level_1_mats, names(level_1_mats), level_1_n_clust),
         function(input_mat, mat_name, mat_n_clust) {
-          png(
-            glue("{output_dir}/level1_heatmap_{str_replace_all(mat_name, ' ', '_')}.png"),
-            width  = 16,
-            height = 12,
-            units  = "in",
-            res    = 150
-          )
-          pheatmap(
-            mat                  = input_mat,
-            show_colnames        = FALSE,
-            color                = heatmaps_colours,
-            annotation_row       = ann_colour_table,
-            annotation_colors    = ann_colour_list,
-            annotation_names_row = FALSE,
-            fontsize             = 14,
-            treeheight_col       = 0,
-            cutree_rows          = mat_n_clust,
-            main                 = mat_name
-          )
-          dev.off()
+
+          if ( diff(range(input_mat)) != 0 ) {
+            png(
+              glue("{output_dir}/level1_heatmap_{str_replace_all(mat_name, ' ', '_')}.png"),
+              width  = 16,
+              height = 12,
+              units  = "in",
+              res    = 150
+            )
+            pheatmap(
+              mat                  = input_mat,
+              show_colnames        = FALSE,
+              color                = heatmaps_colours,
+              annotation_row       = ann_colour_table,
+              annotation_colors    = ann_colour_list,
+              annotation_names_row = FALSE,
+              fontsize             = 14,
+              treeheight_col       = 0,
+              cutree_rows          = mat_n_clust,
+              main                 = mat_name
+            )
+            dev.off()
+          } else {
+            message(glue("Range of matrix for {mat_name} was 0, skipping..."))
+          }
         })
 
   ### Put all the "leftover" pathways in one group/heatmap
