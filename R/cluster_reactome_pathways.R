@@ -11,6 +11,8 @@
 #'   doesn't already exist.
 #' @param width Width and height of output heatmaps in inches.
 #' @param height Width and height of output heatmaps in inches.
+#' @param silent Logical; should RMarkdown messages be printed when generating
+#'   the final report? Defaults to FALSE.
 #'
 #' @description Using a data frame of Reactome pathways, create a pairwise
 #'   Jaccard matrix, then cluster pathways accordingly. Heatmaps/denrograms are
@@ -89,7 +91,8 @@ cluster_reactome_pathways <- function(input_pathways,
                                       species = "human",
                                       output_dir = NULL,
                                       width = 10,
-                                      height = 20) {
+                                      height = 20,
+                                      silent = FALSE) {
 
 
   if (!is.null(output_dir)) {
@@ -406,7 +409,9 @@ cluster_reactome_pathways <- function(input_pathways,
       table_1 = select(out_table_1, -c(cd_genes, bg_genes)),
       table_2 = select(out_table_2, -c(cd_genes, bg_genes))
     ),
-    output_dir = output_dir
+    output_dir = output_dir,
+    clean = TRUE,
+    quiet = silent
   )
 
   message("Done.\n")
