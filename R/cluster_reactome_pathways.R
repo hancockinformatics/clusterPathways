@@ -330,11 +330,13 @@ cluster_reactome_pathways <- function(input_pathways,
             )
             dev.off()
           } else {
-            message(glue("Range of matrix for {mat_name} was 0, skipping..."))
+            message(glue("Range of matrix for {mat_name} was 0, skipping...\n"))
           }
         })
+  message("Done.\n")
 
   ### Put all the "leftover" pathways in one group/heatmap
+  message("Making a heatmap of the 'leftover' pathways...")
   leftover_pathways <- pathway_table_2 %>%
     select(description, level_1) %>%
     split(x = .$description, f = .$level_1) %>%
@@ -351,33 +353,40 @@ cluster_reactome_pathways <- function(input_pathways,
     unique() %>%
     length()
 
-  heatmap_leftover <- pheatmap(
-    mat                  = leftover_sig_jac_mat,
-    show_colnames        = FALSE,
-    color                = heatmaps_colours,
-    annotation_row       = ann_colour_table,
-    annotation_colors    = ann_colour_list,
-    annotation_names_row = FALSE,
-    fontsize             = 14,
-    treeheight_col       = 0,
-    cutree_rows          = leftover_n_clust,
-    main                 = "Miscellaneous pathways",
-    silent               = TRUE
-  )
-  png(
-    glue("{output_dir}/level1_heatmap_miscellaneous.png"),
-    width  = 16,
-    height = 12,
-    units  = "in",
-    res    = 150
-  )
-  print(heatmap_leftover)
-  dev.off()
-  message("Done.\n")
+  if (nrow(leftover_sig_jac_mat) != 0) {
+    heatmap_leftover <- pheatmap(
+      mat                  = leftover_sig_jac_mat,
+      show_colnames        = FALSE,
+      color                = heatmaps_colours,
+      annotation_row       = ann_colour_table,
+      annotation_colors    = ann_colour_list,
+      annotation_names_row = FALSE,
+      fontsize             = 14,
+      treeheight_col       = 0,
+      cutree_rows          = leftover_n_clust,
+      main                 = "Miscellaneous pathways",
+      silent               = TRUE
+    )
+    png(
+      glue("{output_dir}/level1_heatmap_miscellaneous.png"),
+      width  = 16,
+      height = 12,
+      units  = "in",
+      res    = 150
+    )
+    print(heatmap_leftover)
+    dev.off()
+    message("Done.\n")
+  } else {
+    message("No leftover pathways were found, skipping...\n")
+  }
+
+
 
 
   ## Create output tables and summary Rmd report
-  message("Generating output tables...")
+  message("Generating output tables and report...")
+
   out_table_1 <- initial_clusters_max_GR %>%
     select(-description_n) %>%
     mutate(

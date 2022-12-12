@@ -1,6 +1,6 @@
 Package: clusterPathways
 Title: Cluster Pathways Using Genes and Jaccard Index
-Version: 0.0.50
+Version: 0.0.51
 Authors@R: 
     person("Travis", "Blimkie", , "travis@hancocklab.com", role = c("aut", "cre"))
 Description: Produces tables and heatmaps/dendrograms of pathways,
@@ -23,7 +23,7 @@ Imports:
     tidyr,
     vegan
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.2
+RoxygenNote: 7.2.3
 Depends: 
     R (>= 2.10)
 LazyData: true
